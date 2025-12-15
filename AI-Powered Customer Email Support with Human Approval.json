@@ -1,0 +1,334 @@
+{
+  "name": "AI-Powered Customer Email Support with Human Approval",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "Support",
+            "INBOX"
+          ]
+        }
+      },
+      "id": "5563241a-53af-491e-ac53-f415fcef3c07",
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "supportEmail",
+              "value": "podpora@nothix.eu",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "teamMember",
+              "value": "Matěj V",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "slackChannel",
+              "value": "<__PLACEHOLDER_VALUE__Slack channel ID or name__>",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c217211a-83d7-4693-bd88-2dce48f82987",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $('Email Trigger').item.json.subject }}",
+        "message": "={{ $('AI Response Generator').item.json.message.content }}",
+        "options": {
+          "sendTo": "={{ $('Email Trigger').item.json.from }}"
+        }
+      },
+      "id": "bf3b8ae9-6e6e-44e2-ab9e-a28cb61bae9e",
+      "name": "Create Draft Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1408,
+        48
+      ],
+      "webhookId": "20267a10-c3a2-468b-ae9d-71160003353f"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Workflow Configuration').item.json.slackChannel }}"
+        },
+        "text": "=New email draft ready for review from {{ $('Email Trigger').item.json.from }}. Subject: {{ $('Email Trigger').item.json.subject }}. Please review and approve the draft in Gmail.",
+        "otherOptions": {}
+      },
+      "id": "fd0e981a-427e-43e0-beb7-b2f0f4f5fc13",
+      "name": "Notify Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1632,
+        48
+      ],
+      "webhookId": "96fb9ecb-fafb-4b84-9044-891f56c75c37"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "limitWaitTime": true,
+        "resumeAmount": 24,
+        "options": {}
+      },
+      "id": "349e95de-0ec9-4385-ab48-27a01ffce362",
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1856,
+        48
+      ],
+      "webhookId": "a1bd76aa-0bfa-41e2-87f6-37d1a09ede3f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $('Wait for Approval').item.json.approved }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "105249ec-650a-4728-9009-17d2f7a057a4",
+      "name": "Check Approval Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2080,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Email Trigger').item.json.from }}",
+        "subject": "=Re: {{ $('Email Trigger').item.json.subject }}",
+        "message": "={{ $('AI Response Generator').item.json.message.content }}",
+        "options": {}
+      },
+      "id": "e3a0192e-fd93-48b9-bba6-521e7f15c2fe",
+      "name": "Send Approved Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2304,
+        48
+      ],
+      "webhookId": "4fad4a8c-176d-4a02-82a8-d0531fae59bf"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "<__PLACEHOLDER_VALUE__Database table name for email logs__>"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email_from": "={{ $('Email Trigger').item.json.from }}",
+            "email_subject": "={{ $('Email Trigger').item.json.subject }}",
+            "status": "sent",
+            "sent_at": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "40d4924a-45aa-475b-a73c-66356e34514a",
+      "name": "Log Email Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2528,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gemini-2.0-flash-exp"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.text || $json.snippet }}"
+            }
+          ]
+        },
+        "options": {
+          "systemMessage": "You are a professional customer support assistant. Analyze the incoming email and generate a professional, concise, and helpful response. Be polite, clear, and address the customer's concerns directly. Keep the response under 200 words unless more detail is necessary."
+        }
+      },
+      "id": "f6f78184-43f6-48f0-83d9-171f9848794b",
+      "name": "AI Response Generator",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        48
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Trigger": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Draft Email": {
+      "main": [
+        [
+          {
+            "node": "Notify Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Team": {
+      "main": [
+        [
+          {
+            "node": "Wait for Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Approval": {
+      "main": [
+        [
+          {
+            "node": "Check Approval Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval Status": {
+      "main": [
+        [
+          {
+            "node": "Send Approved Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Approved Email": {
+      "main": [
+        [
+          {
+            "node": "Log Email Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "AI Response Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Response Generator": {
+      "main": [
+        [
+          {
+            "node": "Create Draft Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "358fbb1e-3d77-4608-9c90-36ae178e0b5d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c96d4e709cf836b2f9041f250f6f9769917944ea8fd139d803ef7ce2e8a94328"
+  },
+  "id": "ZhTEJ7SjEu6lFI9c",
+  "tags": []
+}
