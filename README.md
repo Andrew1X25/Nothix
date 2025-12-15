@@ -2,7 +2,9 @@
 
 ## 🚀 Project Overview
 
-Nothix is an initiative focused on developing a comprehensive platform for **business process automation, data analysis, and administrative reporting**. Our goal is to leverage powerful, flexible workflow tools (like n8n) to streamline operations, automate critical communication channels (especially email), and provide key insights through a centralized web dashboard.
+**This project is a key initiative of our digital agency, Nothix, which operates the Nothix.eu website.**
+
+Nothix is focused on developing a comprehensive platform for **business process automation, data analysis, and administrative reporting**. Our goal is to leverage powerful, flexible workflow tools (like n8n) to streamline operations, automate critical communication channels (especially email), and provide key insights through a centralized web dashboard.
 
 We aim to create a reliable system that acts as a **data collector and analyzer** for business efficiency.
 
